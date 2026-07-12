@@ -1,0 +1,14 @@
+{
+  "name": "@nightqueue/spicetify-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun build src/app.ts --outfile dist/nightqueue.js --format iife --watch",
+    "build": "bun build src/app.ts --outfile dist/nightqueue.js --format iife --minify",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nightqueue/protocol": "workspace:*"
+  }
+}

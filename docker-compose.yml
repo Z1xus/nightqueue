@@ -1,0 +1,55 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      LAVALINK_HOST: lavalink
+      LAVALINK_PORT: "2333"
+      PORT: "3000"
+    ports:
+      - "7187:3000"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      lavalink:
+        condition: service_healthy
+    restart: unless-stopped
+
+  yt-cipher:
+    image: ghcr.io/kikkia/yt-cipher:master
+    environment:
+      API_TOKEN: ${YT_CIPHER_PASSWORD}
+    restart: unless-stopped
+
+  lavalink-init:
+    image: alpine:3
+    command: chown -R 322:322 /plugins
+    volumes:
+      - lavalink-plugins:/plugins
+
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4.2.2
+    env_file: .env
+    depends_on:
+      lavalink-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "2333"
+      LAVALINK_PORT: "2333"
+    volumes:
+      - ./infra/lavalink/application.yml:/opt/Lavalink/application.yml:ro
+      - lavalink-plugins:/opt/Lavalink/plugins
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -fsS -H \"Authorization: $${LAVALINK_PASSWORD}\" http://lavalink:2333/version || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  lavalink-plugins:

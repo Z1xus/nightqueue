@@ -1,0 +1,18 @@
+{
+  "name": "nightqueue",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "author": "z1xus",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "bun run --filter '*' typecheck",
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter '*' build"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "bun-types": "^1.3.14",
+    "typescript": "5.9.3"
+  }
+}

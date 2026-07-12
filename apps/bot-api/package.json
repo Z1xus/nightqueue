@@ -1,0 +1,22 @@
+{
+  "name": "@nightqueue/bot-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target bun --outdir dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@nightqueue/protocol": "workspace:*",
+    "@nightqueue/resolver": "workspace:*",
+    "discord.js": "14.26.5",
+    "fastify": "5.10.0",
+    "pino": "10.3.1",
+    "shoukaku": "4.3.0",
+    "zod": "4.4.3"
+  }
+}
