@@ -1,4 +1,5 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Constants } from "shoukaku";
 import type { Shoukaku } from "shoukaku";
 import type { Logger } from "pino";
 import { buildCommands, handleInteraction, handleMessage, type BotContext } from "./commands";
@@ -31,6 +32,13 @@ export function wireClient(
     await ready.application.commands.set(buildCommands().map((command) => command.toJSON()));
     logger.info({ user: ready.user.tag }, "discord ready");
     await restore().catch((err) => logger.error({ err: String(err) }, "queue restore failed"));
+  });
+
+  client.on(Events.VoiceStateUpdate, (_oldState, newState) => {
+    if (newState.id !== newState.client.user.id || newState.channelId) return;
+    const connection = shoukaku.connections.get(newState.guild.id);
+    if (connection?.state === Constants.State.DISCONNECTED)
+      void ctx.queue.onExternalDisconnect(newState.guild.id);
   });
 
   client.on(Events.MessageCreate, async (message) => {

@@ -1,5 +1,6 @@
 import type { Client } from "discord.js";
 import type { Logger } from "pino";
+import { Constants } from "shoukaku";
 import type { Player, Shoukaku, Track } from "shoukaku";
 import type { Resolver, ResolvedTrack, TrackRequest } from "@nightqueue/protocol";
 import type { Db } from "./db";
@@ -95,19 +96,22 @@ export class QueueManager {
   }
 
   private async ensurePlayer(state: GuildState, voiceChannelId: string): Promise<void> {
-    if (state.player && state.voiceChannelId === voiceChannelId) return;
+    const connection = this.deps.shoukaku.connections.get(state.guildId);
+    const connected =
+      connection?.state === Constants.State.CONNECTED && connection?.channelId === voiceChannelId;
+    if (connected && state.player) return;
     state.voiceChannelId = voiceChannelId;
-    const player =
-      this.deps.shoukaku.players.get(state.guildId) ??
-      (await this.deps.shoukaku.joinVoiceChannel({
-        guildId: state.guildId,
-        channelId: voiceChannelId,
-        shardId: 0,
-        deaf: true, // good bots don't listen in on human convos :p
-      }));
+    if (connection) await this.deps.shoukaku.leaveVoiceChannel(state.guildId);
+    const player = await this.deps.shoukaku.joinVoiceChannel({
+      guildId: state.guildId,
+      channelId: voiceChannelId,
+      shardId: 0,
+      deaf: true, // good bots don't listen in on human convos :p
+    });
     state.player = player;
     await player.setGlobalVolume(state.volume);
     this.attach(state, player);
+    if (state.current) await this.playTrack(state, state.current);
   }
 
   private attach(state: GuildState, player: Player): void {
@@ -216,6 +220,17 @@ export class QueueManager {
     state.volume = volume;
     await state.player?.setGlobalVolume(volume);
     this.persist(state);
+  }
+
+  async onExternalDisconnect(guildId: string): Promise<void> {
+    const state = this.states.get(guildId);
+    if (state) {
+      if (state.current) state.queue.unshift(state.current);
+      state.current = null;
+      state.player = null;
+      this.persist(state);
+    }
+    await this.deps.shoukaku.leaveVoiceChannel(guildId).catch(() => {});
   }
 
   async disconnect(guildId: string): Promise<void> {
