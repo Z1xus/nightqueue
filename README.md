@@ -11,7 +11,9 @@ Credentials:
 - Discord bot token - [Discord Developer Portal](https://discord.com/developers/applications) -> New Application -> Bot -> Reset Token. Invite with `bot + applications.commands` scopes and Connect/Speak permissions.
 - Spotify app - [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) -> Create app. Grab Client ID/Secret and add `https://your-domain/pair/callback` as a Redirect URI.
 
-Everything runs as three [Docker](https://docs.docker.com/engine/install/) Compose containers (bot/api, Lavalink, yt-cipher) — Docker is the only host dependency.
+Everything runs as three [Docker](https://docs.docker.com/engine/install/) Compose containers (bot/api, Lavalink, yt-cipher) - Docker is the only host dependency.
+
+The goal is to stay lightweight and easy to deploy: the whole stack idles at ~700 MiB RAM and <5% of a core (bot/api ~70 MiB, yt-cipher ~200 MiB, Lavalink's JVM ~400 MiB). Unfortunately Lavalink is the best plug-n-play audio option right now, so that's about as small as it gets.
 
 ```bash
 git clone https://github.com/Z1xus/nightqueue.git && cd nightqueue
