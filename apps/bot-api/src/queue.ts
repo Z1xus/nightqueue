@@ -29,6 +29,7 @@ interface GuildState {
   queue: QueueTrack[];
   player: Player | null;
   retried: boolean;
+  faulted: boolean;
 }
 
 export function trackFromLavalink(track: Track, requestedBy: string): QueueTrack {
@@ -89,6 +90,7 @@ export class QueueManager {
         queue: [],
         player: null,
         retried: false,
+        faulted: false,
       };
       this.states.set(guildId, state);
     }
@@ -119,16 +121,19 @@ export class QueueManager {
     player.removeAllListeners("stuck");
     player.removeAllListeners("exception");
     player.on("end", (event) => {
-      if (event.reason === "finished") void this.advance(state);
-      else if (event.reason === "loadFailed") void this.onLoadFailed(state);
+      if (event.reason === "loadFailed" || (event.reason === "finished" && state.faulted))
+        void this.onLoadFailed(state);
+      else if (event.reason === "finished") void this.advance(state);
     });
     player.on("stuck", () => void this.advance(state));
-    player.on("exception", (event) =>
-      this.deps.logger.warn({ guildId: state.guildId, cause: event.exception.severity }, "track exception"),
-    );
+    player.on("exception", (event) => {
+      state.faulted = true;
+      this.deps.logger.warn({ guildId: state.guildId, cause: event.exception.severity }, "track exception");
+    });
   }
 
   private async playTrack(state: GuildState, track: QueueTrack): Promise<void> {
+    state.faulted = false;
     state.current = track;
     await state.player?.playTrack({ track: { encoded: track.encoded } });
     this.persist(state);
