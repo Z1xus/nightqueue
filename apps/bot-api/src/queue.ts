@@ -6,6 +6,7 @@ import type { Resolver, ResolvedTrack, TrackRequest } from "@nightqueue/protocol
 import type { Db } from "./db";
 
 const CONFIDENCE_THRESHOLD = 0.75;
+const MAX_RETRIES = 3;
 
 export type EnqueueMode = "append" | "next" | "now";
 
@@ -28,7 +29,7 @@ interface GuildState {
   current: QueueTrack | null;
   queue: QueueTrack[];
   player: Player | null;
-  retried: boolean;
+  retries: number;
   faulted: boolean;
 }
 
@@ -89,7 +90,7 @@ export class QueueManager {
         current: null,
         queue: [],
         player: null,
-        retried: false,
+        retries: 0,
         faulted: false,
       };
       this.states.set(guildId, state);
@@ -140,7 +141,7 @@ export class QueueManager {
   }
 
   private async advance(state: GuildState): Promise<void> {
-    state.retried = false;
+    state.retries = 0;
     const next = state.queue.shift();
     if (!next) {
       state.current = null;
@@ -153,8 +154,8 @@ export class QueueManager {
 
   private async onLoadFailed(state: GuildState): Promise<void> {
     const current = state.current;
-    if (current?.request && !state.retried) {
-      state.retried = true;
+    if (current?.request && state.retries < MAX_RETRIES) {
+      state.retries += 1;
       await this.deps.resolver.invalidate(current.request);
       const retried = await this.deps.resolver.resolve(current.request);
       if (retried) {
