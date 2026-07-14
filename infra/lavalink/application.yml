@@ -42,6 +42,7 @@ plugins:
       - MUSIC
       - TVHTML5_SIMPLY
       - ANDROID_VR
+      - TV
     oauth:
       enabled: true
       refreshToken: "${YOUTUBE_OAUTH_REFRESH_TOKEN:}"
